@@ -18,9 +18,9 @@ hello-world-argocd-dev/
 ├── argocd/
 │   └── hello-world-dev-application.yaml  # DEV environment Application manifest (auto-synced)
 ├── argocd-repository-secret.yaml     # Argo CD repository secrets (configure before applying)
-├── ghcr-credentials-secret.yaml      # GHCR credentials (set once for organization)
-├── notifications-configmap.yaml      # Argo CD notifications configuration
-├── setup-argocd.sh                   # Argo CD setup script
+├── ghcr-credentials-secret.yaml      # GHCR credentials (set once per K8s cluster for organization)
+├── notifications-configmap.yaml      # Argo CD notifications configuration 
+├── setup-argocd.sh                   # Argo CD setup script (execute after secret.yaml files updated)
 └── README.md                          # This file
 ```
 
