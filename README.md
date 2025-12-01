@@ -2,6 +2,14 @@
 
 This repository contains the Argo CD Application manifest for the **DEV** environment of the hello-world essesseff app.
 
+## See Also
+
+- [essesseff Documentation](https://essesseff.com/docs) - essesseff platform documentation
+- [Argo CD Documentation](https://argo-cd.readthedocs.io/) - Argo CD documentation
+- [Helm Documentation](https://helm.sh/docs) - Helm documentation
+- [Kubernetes Documentation](https://kubernetes.io/docs/home/) - Kubernetes (K8s) documentation
+- [GitHub Documentation](https://docs.github.com/en) - GitHub documentation
+
 ## Repository Structure
 
 ```
