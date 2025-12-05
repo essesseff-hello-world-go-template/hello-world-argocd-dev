@@ -72,6 +72,27 @@ kubectl apply -f notifications-secret.yaml
 echo "📝 Applying notification configmap..."
 kubectl apply -f notifications-configmap.yaml
 
+# Ensure controller uses the correct ConfigMap/Secret
+kubectl patch deploy argocd-notifications-controller -n argocd \
+  -p '{
+    "spec": {
+      "template": {
+        "spec": {
+          "containers": [{
+            "name": "argocd-notifications-controller",
+            "env": [
+              {"name": "NOTIFICATIONS_CM_NAME", "value": "argocd-notifications-cm"},
+              {"name": "NOTIFICATIONS_SECRET_NAME", "value": "argocd-notifications-secret"}
+            ]
+          }]
+        }
+      }
+    }
+  }'
+
+# Restart controller to reload config
+kubectl rollout restart deploy argocd-notifications-controller -n argocd
+
 # Verify configuration
 echo ""
 echo "✅ Verifying configuration..."
