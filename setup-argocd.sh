@@ -2,10 +2,10 @@
 
 # setup-argocd.sh
 
-# Setup Argo CD for {{APP_NAME}} {{ENVIRONMENT}}
+# Setup Argo CD for hello-world dev
 
 # This script sets up Argo CD notifications for an essesseff app
-# Template variables ({{APP_NAME}}, {{GITHUB_ORG}}, {{REPOSITORY_ID}}, etc.) 
+# Template variables hello-world, essesseff-hello-world-go-template, {{REPOSITORY_ID}}, etc.) 
 # are replaced when apps are created from templates
 
 set -e
@@ -113,6 +113,74 @@ kubectl patch configmap argocd-notifications-cm -n argocd \
   --type merge \
   --patch-file notifications-configmap.yaml
 
+# Merge subscriptions field (requires special handling to append, not overwrite)
+echo "📝 Merging subscriptions field (adding webhook-${REPOSITORY_ID} subscription)..."
+WEBHOOK_NAME="webhook-${REPOSITORY_ID}"
+
+# Get current subscriptions field
+CURRENT_SUBSCRIPTIONS=$(kubectl get configmap argocd-notifications-cm -n argocd -o jsonpath='{.data.subscriptions}' 2>/dev/null || echo "")
+
+# Check if subscription for this webhook already exists
+if echo "$CURRENT_SUBSCRIPTIONS" | grep -q "webhook-${REPOSITORY_ID}"; then
+  echo "  ✓ Subscription for '${WEBHOOK_NAME}' already exists, skipping"
+else
+  # Create new subscription entry
+  NEW_SUBSCRIPTION="- recipients:
+  - ${WEBHOOK_NAME}
+  triggers:
+  - on-sync-started
+  - on-sync-succeeded
+  - on-sync-failed
+  - on-deployed
+  - on-health-degraded
+  selector: essesseff.io.repositoryId=${REPOSITORY_ID}"
+
+  # Merge subscriptions
+  if [ -z "$CURRENT_SUBSCRIPTIONS" ] || [ "$CURRENT_SUBSCRIPTIONS" = "null" ]; then
+    # No existing subscriptions, create new
+    MERGED_SUBSCRIPTIONS="$NEW_SUBSCRIPTION"
+  else
+    # Append to existing subscriptions
+    MERGED_SUBSCRIPTIONS="${CURRENT_SUBSCRIPTIONS}
+${NEW_SUBSCRIPTION}"
+  fi
+
+  # Create temporary patch file with proper JSON escaping
+  TEMP_PATCH=$(mktemp)
+  
+  # Escape the YAML content for JSON
+  # Use jq if available (most reliable), otherwise use Python (usually available)
+  if command -v jq &> /dev/null; then
+    # Use jq to properly escape the string (jq -Rs . returns a JSON string with quotes, we strip them)
+    ESCAPED_SUBS=$(printf '%s' "$MERGED_SUBSCRIPTIONS" | jq -Rs . | sed 's/^"//;s/"$//')
+  elif command -v python3 &> /dev/null; then
+    # Fallback: use Python to escape (works on both macOS and Linux)
+    ESCAPED_SUBS=$(printf '%s' "$MERGED_SUBSCRIPTIONS" | python3 -c "import sys, json; print(json.dumps(sys.stdin.read())[1:-1])")
+  else
+    # Last resort: use awk (works on both BSD and GNU, but less reliable for complex escaping)
+    ESCAPED_SUBS=$(printf '%s' "$MERGED_SUBSCRIPTIONS" | \
+      awk 'BEGIN{ORS=""} {gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); if (NR>1) printf "\\n"; printf "%s", $0}')
+  fi
+  
+  cat > "$TEMP_PATCH" <<EOF
+{
+  "data": {
+    "subscriptions": "${ESCAPED_SUBS}"
+  }
+}
+EOF
+
+  # Patch the subscriptions field
+  kubectl patch configmap argocd-notifications-cm -n argocd \
+    --type merge \
+    --patch-file "$TEMP_PATCH"
+  
+  # Clean up
+  rm -f "$TEMP_PATCH"
+  
+  echo "  ✓ Added subscription for '${WEBHOOK_NAME}'"
+fi
+
 # Restart controller to reload config
 # Note: This restarts the controller for all apps, but it's necessary to pick up new webhook services
 # The restart is safe and idempotent - multiple restarts don't cause issues
@@ -165,6 +233,14 @@ if kubectl get configmap argocd-notifications-cm -n argocd -o yaml | grep -q "se
   echo "  ✓ Webhook service 'webhook-${REPOSITORY_ID}' configured"
 else
   echo "  ✗ Webhook service 'webhook-${REPOSITORY_ID}' not configured"
+  exit 1
+fi
+
+# Check if webhook subscription is configured
+if kubectl get configmap argocd-notifications-cm -n argocd -o jsonpath='{.data.subscriptions}' | grep -q "webhook-${REPOSITORY_ID}"; then
+  echo "  ✓ Webhook subscription 'webhook-${REPOSITORY_ID}' configured"
+else
+  echo "  ✗ Webhook subscription 'webhook-${REPOSITORY_ID}' not configured"
   exit 1
 fi
 
