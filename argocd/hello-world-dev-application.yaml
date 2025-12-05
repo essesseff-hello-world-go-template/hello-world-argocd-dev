@@ -9,11 +9,11 @@ metadata:
     essesseff: "true"
     essesseff.io.repositoryId: "{{REPOSITORY_ID}}"
   annotations:
-    notifications.argoproj.io/subscribe.on-sync-started.webhook: webhook-hello-world
-    notifications.argoproj.io/subscribe.on-sync-succeeded.webhook: webhook-hello-world
-    notifications.argoproj.io/subscribe.on-sync-failed.webhook: webhook-hello-world
-    notifications.argoproj.io/subscribe.on-deployed.webhook: webhook-hello-world
-    notifications.argoproj.io/subscribe.on-health-degraded.webhook: webhook-hello-world
+    notifications.argoproj.io/subscribe.on-sync-started-essesseff-hello-world-go-template-hello-world.webhook: webhook-essesseff-hello-world-go-template-hello-world
+    notifications.argoproj.io/subscribe.on-sync-succeeded-essesseff-hello-world-go-template-hello-world.webhook: webhook-essesseff-hello-world-go-template-hello-world
+    notifications.argoproj.io/subscribe.on-sync-failed-essesseff-hello-world-go-template-hello-world.webhook: webhook-essesseff-hello-world-go-template-hello-world
+    notifications.argoproj.io/subscribe.on-deployed-essesseff-hello-world-go-template-hello-world.webhook: webhook-essesseff-hello-world-go-template-hello-world
+    notifications.argoproj.io/subscribe.on-health-degraded-essesseff-hello-world-go-template-hello-world.webhook: webhook-essesseff-hello-world-go-template-hello-world
 spec:
   project: default
   source:
