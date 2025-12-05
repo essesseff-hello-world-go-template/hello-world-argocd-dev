@@ -8,7 +8,7 @@ metadata:
   namespace: argocd
 data:
   # Webhook service for hello-world app
-  service.webhook.webhook-essesseff-hello-world-go-template-hello-world: |
+  service.webhook.webhook-{{REPOSITORY_ID}}: |
     url: $argocd-webhook-url
     headers:
     - name: x-api-key
@@ -17,12 +17,12 @@ data:
       value: application/json
 
   # Template for sync status notifications for hello-world app
-  template.app-sync-status-essesseff-hello-world-go-template-hello-world: |
+  template.app-sync-status: |
     message: |
       Application: {{.app.metadata.name}}
       Event: {{.app.status.operationState.phase}}
     webhook:
-      webhook-essesseff-hello-world-go-template-hello-world:
+      webhook-{{REPOSITORY_ID}}:
         method: POST
         body: |
           {
@@ -48,31 +48,31 @@ data:
           }
           
   # Triggers - when to send notifications
-  trigger.on-sync-started-essesseff-hello-world-go-template-hello-world: |
+  trigger.on-sync-started: |
     - description: Application sync has started
       send:
       - app-sync-status
       when: app.status.operationState.phase in ['Running'] and app.status.operationState.operation.sync != nil
 
-  trigger.on-sync-succeeded-essesseff-hello-world-go-template-hello-world: |
+  trigger.on-sync-succeeded: |
     - description: Application sync succeeded
       send:
       - app-sync-status
       when: app.status.operationState.phase in ['Succeeded']
 
-  trigger.on-sync-failed-essesseff-hello-world-go-template-hello-world: |
+  trigger.on-sync-failed: |
     - description: Application sync failed
       send:
       - app-sync-status
       when: app.status.operationState.phase in ['Failed', 'Error']
 
-  trigger.on-deployed-essesseff-hello-world-go-template-hello-world: |
+  trigger.on-deployed: |
     - description: Application deployed successfully (synced and healthy)
       send:
       - app-sync-status
       when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
 
-  trigger.on-health-degraded-essesseff-hello-world-go-template-hello-world: |
+  trigger.on-health-degraded: |
     - description: Application health degraded
       send:
       - app-sync-status
