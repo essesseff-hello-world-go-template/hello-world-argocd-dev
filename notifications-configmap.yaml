@@ -13,6 +13,8 @@ data:
     headers:
     - name: x-api-key
       value: $aws-api-gateway-key-essesseff-hello-world-go-template
+    - name: x-app-secret
+      value: $app-secret-{{REPOSITORY_ID}}
     - name: Content-Type
       value: application/json
 
@@ -26,7 +28,6 @@ data:
         method: POST
         body: |
           {
-            "app_secret": "$app-secret-{{REPOSITORY_ID}}",
             "repository_id": "{{REPOSITORY_ID}}",
             "event_type": "{{.app.status.operationState.phase}}",
             "application_name": "{{.app.metadata.name}}",
