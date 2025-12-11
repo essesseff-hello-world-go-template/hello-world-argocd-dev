@@ -59,7 +59,7 @@ data:
     - description: Application sync succeeded
       send:
       - app-sync-status
-      when: app.status.operationState.phase in ['Succeeded']
+      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status != 'Healthy'
 
   trigger.on-sync-failed: |
     - description: Application sync failed
