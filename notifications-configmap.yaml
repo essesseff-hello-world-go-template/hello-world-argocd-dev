@@ -35,11 +35,11 @@ data:
       FinishedAt: {{.app.status.operationState.finishedAt}}
       OperationMessage: {{.app.status.operationState.message}}
     webhook:
-      webhook-{{REPOSITORY_ID}}:
+      webhook-{{.app.metadata.labels.configenvrepoid}}:
         method: POST
         body: |
           {
-            "repository_id": "{{REPOSITORY_ID}}",
+            "repository_id": "{{.app.metadata.labels.configenvrepoid}}",
             "event_type": "{{.app.status.operationState.phase}}",
             "application_name": "{{.app.metadata.name}}",
             "app": "{{.app.metadata.labels.app}}",
