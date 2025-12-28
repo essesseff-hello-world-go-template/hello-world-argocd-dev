@@ -20,9 +20,11 @@ hello-world-argocd-dev/
 ├── argocd-repository-secret.yaml     # Argo CD repository secrets
 ├── ghcr-credentials-secret.yaml      # GHCR credentials (set once per K8s cluster for organization)
 ├── notifications-configmap.yaml      # Argo CD notifications configuration
+├── offboarding/
+│   └── offboard.sh                   # script for offboarding 
 ├── setup-argocd-cluster.sh           # Argo CD K8s setup script 
 ├── setup-argocd.sh                   # Argo CD hello-world-dev essesseff app setup script 
-└── README.md                          # This file
+└── README.md                         # This file
 ```
 
 ## Architecture
@@ -86,6 +88,23 @@ hello-world-argocd-dev/
    ```bash
    kubectl port-forward service/hello-world-dev 8081:80 -n essesseff-hello-world-go-template
    # Access: http://localhost:8081
+   ```
+### Offboard hello-world-dev deployment from Argo CD and K8s
+
+1. **Execute the offboarding script**:
+   ```bash
+   cd offboarding
+   chmod 744 offboard-hello-world-dev.sh
+   ./offboard-hello-world-dev.sh
+   ```
+
+### Offboard essesseff-hello-world-go-template Namespace K8s
+
+1. **Execute the offboarding script**:
+   ```bash
+   cd offboarding
+   chmod 744 offboard-essesseff-hello-world-go-template.sh
+   ./offboard-essesseff-hello-world-go-template.sh
    ```
 
 ## Application Details
