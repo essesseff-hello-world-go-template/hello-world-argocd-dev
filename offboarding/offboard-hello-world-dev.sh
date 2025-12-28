@@ -22,37 +22,125 @@ echo "  Parent: ${APP_OF_APPS}"
 echo "  Child:  ${CHILD_APP}"
 echo ""
 
+# CRITICAL: Add cascade deletion finalizer to parent app-of-apps
+echo "Adding cascade deletion finalizer to parent application..."
+if kubectl get application ${APP_OF_APPS} -n argocd &>/dev/null; then
+    kubectl patch application ${APP_OF_APPS} -n argocd \
+        -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}' \
+        --type merge
+    echo "✓ Finalizer added to ${APP_OF_APPS}"
+else
+    echo "⚠ Parent application ${APP_OF_APPS} not found"
+fi
+
+# CRITICAL: Add cascade deletion finalizer to child application (in case it exists independently)
+echo "Adding cascade deletion finalizer to child application..."
+if kubectl get application ${CHILD_APP} -n argocd &>/dev/null; then
+    kubectl patch application ${CHILD_APP} -n argocd \
+        -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}' \
+        --type merge
+    echo "✓ Finalizer added to ${CHILD_APP}"
+else
+    echo "⚠ Child application ${CHILD_APP} not found (may be managed by parent)"
+fi
+
+echo ""
+echo "⏳ Finalizers configured. Now deleting applications..."
+echo "This will trigger Argo CD to delete all managed Kubernetes resources."
+echo ""
+
 # Delete the parent Argo CD Application (app-of-apps)
+# With the finalizer in place, this will cascade delete all managed resources
 echo "Deleting parent Argo CD Application (app-of-apps): ${APP_OF_APPS}..."
 if kubectl get application ${APP_OF_APPS} -n argocd &>/dev/null; then
-    kubectl delete application ${APP_OF_APPS} -n argocd --ignore-not-found=true
-    echo "✓ Parent application ${APP_OF_APPS} deleted"
+    kubectl delete application ${APP_OF_APPS} -n argocd
+    echo "✓ Parent application ${APP_OF_APPS} deletion initiated"
     
-    # Wait for parent to be removed
-    echo "Waiting for parent application to finalize..."
-    kubectl wait --for=delete application/${APP_OF_APPS} -n argocd --timeout=60s || true
+    # Wait for parent to be removed (this may take time as resources are being cleaned up)
+    echo "⏳ Waiting for Argo CD to delete all managed resources (this may take several minutes)..."
+    kubectl wait --for=delete application/${APP_OF_APPS} -n argocd --timeout=600s || true
+    echo "✓ Parent application deleted"
 else
     echo "⚠ Parent application ${APP_OF_APPS} not found (may already be deleted)"
 fi
 
-# Verify child application is also deleted (should cascade from parent)
+# Check if child application still exists and delete it if necessary
 echo ""
-echo "Verifying child application ${CHILD_APP} is removed..."
+echo "Checking child application status..."
 sleep 5  # Give Argo CD a moment to cascade delete
 
 if kubectl get application ${CHILD_APP} -n argocd &>/dev/null; then
     echo "⚠ Child application ${CHILD_APP} still exists, deleting explicitly..."
-    kubectl delete application ${CHILD_APP} -n argocd --ignore-not-found=true
-    kubectl wait --for=delete application/${CHILD_APP} -n argocd --timeout=300s || true
+    kubectl delete application ${CHILD_APP} -n argocd
+    kubectl wait --for=delete application/${CHILD_APP} -n argocd --timeout=600s || true
     echo "✓ Child application ${CHILD_APP} deleted"
 else
     echo "✓ Child application ${CHILD_APP} automatically removed by parent deletion"
 fi
 
-# Wait for Argo CD to clean up managed resources
+# Wait for Argo CD to finish cleaning up managed resources
 echo ""
-echo "Waiting for Argo CD to finalize resource cleanup..."
-sleep 10
+echo "⏳ Waiting for resource cleanup to complete..."
+sleep 15
+
+# Verify all managed resources are actually removed from the namespace
+echo ""
+echo "Verifying resource cleanup in namespace ${NAMESPACE}..."
+
+# Check for any remaining resources by name pattern (most reliable)
+REMAINING_DEPLOYMENTS=$(kubectl get deployments -n ${NAMESPACE} ${CHILD_APP} --ignore-not-found --no-headers 2>/dev/null | wc -l)
+REMAINING_SERVICES=$(kubectl get services -n ${NAMESPACE} ${CHILD_APP} --ignore-not-found --no-headers 2>/dev/null | wc -l)
+REMAINING_INGRESS=$(kubectl get ingress -n ${NAMESPACE} ${CHILD_APP} --ignore-not-found --no-headers 2>/dev/null | wc -l)
+REMAINING_CONFIGMAPS=$(kubectl get configmaps -n ${NAMESPACE} ${CHILD_APP} --ignore-not-found --no-headers 2>/dev/null | wc -l)
+REMAINING_REPLICASETS=$(kubectl get replicasets -n ${NAMESPACE} -l app=${APP_NAME} --no-headers 2>/dev/null | wc -l)
+REMAINING_PODS=$(kubectl get pods -n ${NAMESPACE} -l app=${APP_NAME} --no-headers 2>/dev/null | wc -l)
+
+# Also check for secrets by name pattern
+REMAINING_SECRETS=0
+for secret_type in "" "-secret" "-config" "-tls"; do
+    if kubectl get secret ${CHILD_APP}${secret_type} -n ${NAMESPACE} --ignore-not-found &>/dev/null; then
+        REMAINING_SECRETS=$((REMAINING_SECRETS + 1))
+    fi
+done
+
+TOTAL_REMAINING=$((REMAINING_DEPLOYMENTS + REMAINING_SERVICES + REMAINING_INGRESS + REMAINING_CONFIGMAPS + REMAINING_SECRETS + REMAINING_REPLICASETS + REMAINING_PODS))
+
+if [ "$TOTAL_REMAINING" -eq 0 ]; then
+    echo "✓ All managed resources cleaned up successfully by Argo CD"
+else
+    echo "⚠ Some resources still remain after Argo CD cleanup:"
+    echo "  - Deployments: ${REMAINING_DEPLOYMENTS}"
+    echo "  - ReplicaSets: ${REMAINING_REPLICASETS}"
+    echo "  - Pods: ${REMAINING_PODS}"
+    echo "  - Services: ${REMAINING_SERVICES}"
+    echo "  - Ingress: ${REMAINING_INGRESS}"
+    echo "  - ConfigMaps: ${REMAINING_CONFIGMAPS}"
+    echo "  - Secrets: ${REMAINING_SECRETS}"
+    echo ""
+    echo "Attempting manual cleanup of remaining resources..."
+    
+    # Strategy 1: Delete by resource name (most reliable)
+    kubectl delete deployment ${CHILD_APP} -n ${NAMESPACE} --ignore-not-found=true
+    kubectl delete service ${CHILD_APP} -n ${NAMESPACE} --ignore-not-found=true
+    kubectl delete ingress ${CHILD_APP} -n ${NAMESPACE} --ignore-not-found=true
+    kubectl delete configmap ${CHILD_APP} -n ${NAMESPACE} --ignore-not-found=true
+    
+    # Strategy 2: Delete by label (in case resources use app label)
+    kubectl delete deployment -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
+    kubectl delete service -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
+    kubectl delete ingress -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
+    kubectl delete configmap -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
+    kubectl delete secret -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
+    kubectl delete replicaset -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
+    kubectl delete pod -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true --force --grace-period=0
+    
+    # Strategy 3: Common secret name patterns
+    kubectl delete secret ${CHILD_APP}-secret -n ${NAMESPACE} --ignore-not-found=true
+    kubectl delete secret ${CHILD_APP}-config -n ${NAMESPACE} --ignore-not-found=true
+    kubectl delete secret ${CHILD_APP}-tls -n ${NAMESPACE} --ignore-not-found=true
+    
+    echo "✓ Manual cleanup completed"
+fi
 
 # Clean up Argo CD repository secrets
 echo ""
@@ -94,7 +182,6 @@ if kubectl get configmap argocd-notifications-cm -n argocd &>/dev/null; then
     
     if [ -n "$CURRENT_SUBSCRIPTIONS" ] && [ "$CURRENT_SUBSCRIPTIONS" != "null" ]; then
         # Remove the subscription block for this repository ID using awk
-        # This removes the entire subscription entry that contains "webhook-${GITHUB_REPO_ID}"
         FILTERED_SUBSCRIPTIONS=$(echo "$CURRENT_SUBSCRIPTIONS" | awk -v webhook="webhook-${GITHUB_REPO_ID}" -v repoid="${GITHUB_REPO_ID}" '
         BEGIN { in_block=0; block="" }
         /^- recipients:/ { 
@@ -153,7 +240,7 @@ EOF
     fi
     
     echo "✓ Notification ConfigMap entries cleaned up"
-    echo "  Note: Shared templates and triggers (app-sync-status, on-sync-started, etc.) are preserved for other apps"
+    echo "  Note: Shared templates and triggers are preserved for other apps"
 else
     echo "⚠ argocd-notifications-cm not found in argocd namespace"
 fi
@@ -163,12 +250,15 @@ echo ""
 echo "Cleaning up Argo CD Notifications Secret entries..."
 
 if kubectl get secret argocd-notifications-secret -n argocd &>/dev/null; then
-    echo "Removing namespace and repo-specific notification secrets..."
+    echo "Removing repo-specific notification secrets..."
     
     # DO NOT remove argocd-webhook-url - it's shared across all apps
     echo "  ⊘ Preserving shared 'argocd-webhook-url'"
     
-    # Remove app secret for this repo (repository-specific)
+    # DO NOT remove aws-api-gateway-key-${NAMESPACE} - it's namespace-scoped, shared across deployments
+    echo "  ⊘ Preserving namespace-scoped 'aws-api-gateway-key-${NAMESPACE}'"
+    
+    # Remove app secret for this repo (repository-specific, deployment-specific)
     kubectl patch secret argocd-notifications-secret -n argocd --type=json \
         -p="[{'op': 'remove', 'path': '/data/app-secret-${GITHUB_REPO_ID}'}]" \
         2>/dev/null && echo "  ✓ Removed 'app-secret-${GITHUB_REPO_ID}'" \
@@ -184,12 +274,6 @@ echo ""
 echo "🔄 Restarting notifications controller to reload configuration..."
 kubectl rollout restart deploy argocd-notifications-controller -n argocd
 
-# Remove any ConfigMaps or Secrets specific to this deployment
-echo ""
-echo "Cleaning up deployment-specific ConfigMaps and Secrets..."
-kubectl delete configmap -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
-kubectl delete secret -n ${NAMESPACE} -l app=${APP_NAME} --ignore-not-found=true
-
 echo ""
 echo "=========================================="
 echo "✅ Deployment offboarding complete"
@@ -198,15 +282,18 @@ echo ""
 echo "Cleaned up:"
 echo "  ✓ Argo CD App-of-Apps: ${APP_OF_APPS}"
 echo "  ✓ Argo CD Child Application: ${CHILD_APP}"
+echo "  ✓ All Kubernetes resources managed by Argo CD in namespace ${NAMESPACE}"
 echo "  ✓ Argo CD repository secrets: ${APP_NAME}-argocd-${ENV}-repo, ${APP_NAME}-config-${ENV}-repo"
 echo "  ✓ Webhook service: webhook-${GITHUB_REPO_ID}"
 echo "  ✓ Webhook subscription for repo ${GITHUB_REPO_ID}"
 echo "  ✓ App secret: app-secret-${GITHUB_REPO_ID}"
 echo ""
-echo "Preserved (shared across apps):"
+echo "Preserved (shared across apps/deployments):"
 echo "  • Webhook URL: argocd-webhook-url"
+echo "  • AWS API Gateway key: aws-api-gateway-key-${NAMESPACE} (namespace-scoped)"
+echo "  • GHCR credentials in namespace ${NAMESPACE} (namespace-scoped)"
 echo "  • Template: app-sync-status"
 echo "  • Triggers: on-sync-started, on-sync-succeeded, on-sync-failed, on-deployed, on-health-degraded"
 echo ""
 echo "Note: Namespace '${NAMESPACE}' still exists."
-echo "To remove the entire namespace, run: ./offboard-namespace.sh"
+echo "To remove the entire namespace and all namespace-scoped resources, run: ./offboard-namespace.sh"
