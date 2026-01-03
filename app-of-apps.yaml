@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: hello-world-argocd-dev
+  name: ${APP_NAME}-argocd-${ENVIRONMENT}
   namespace: argocd
   labels:
-    app: hello-world
-    environment: dev
+    app: ${APP_NAME}
+    environment: ${ENVIRONMENT}
     essesseff: "true"
 spec:
   project: default
   source:
-    repoURL: https://github.com/essesseff-hello-world-go-template/hello-world-argocd-dev
+    repoURL: https://github.com/${GITHUB_ORG}/${APP_NAME}-argocd-${ENVIRONMENT}
     targetRevision: main
     path: argocd
   destination:
@@ -22,4 +22,3 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-
