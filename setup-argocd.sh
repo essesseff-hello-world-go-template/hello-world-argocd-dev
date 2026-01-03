@@ -11,6 +11,67 @@
 
 set -e
 
+# ============================================================================
+# Load environment variables from .env file
+# ============================================================================
+if [ ! -f ".env" ]; then
+  echo "❌ Error: .env file not found"
+  echo ""
+  echo "Please create a .env file with the following variables:"
+  echo "  ARGOCD_MACHINE_USER=your-username"
+  echo "  GITHUB_TOKEN=your-token"
+  echo "  ARGOCD_MACHINE_EMAIL=your-email@example.com"
+  echo ""
+  echo "See .env.example for a template"
+  exit 1
+fi
+
+echo "📦 Loading environment variables from .env..."
+set -a  # automatically export all variables
+source .env
+set +a
+
+# Generate base64 auth string for GHCR
+export GHCR_AUTH_BASE64=$(echo -n "${ARGOCD_MACHINE_USER}:${GITHUB_TOKEN}" | base64)
+
+# Override these if they're set in .env, otherwise use defaults
+APP_NAME="${APP_NAME:-hello-world}"
+GITHUB_ORG="${GITHUB_ORG:-essesseff-hello-world-go-template}"
+ENVIRONMENT="${ENVIRONMENT:-dev}"
+REPOSITORY_ID="${REPOSITORY_ID:-{{REPOSITORY_ID}}}"
+
+# ============================================================================
+# Generate YAML files from templates
+# ============================================================================
+echo "📝 Generating YAML files from templates..."
+
+# Check if envsubst is available
+if ! command -v envsubst &> /dev/null; then
+  echo "❌ Error: envsubst command not found"
+  echo "Please install gettext package:"
+  echo "  - macOS: brew install gettext && brew link --force gettext"
+  echo "  - Ubuntu/Debian: apt-get install gettext-base"
+  echo "  - RHEL/CentOS: yum install gettext"
+  exit 1
+fi
+
+# Generate argocd-repository-secret.yaml
+if [ -f "argocd-repository-secret.yaml.template" ]; then
+  envsubst < argocd-repository-secret.yaml.template > argocd-repository-secret.yaml
+  echo "  ✓ Generated argocd-repository-secret.yaml"
+else
+  echo "  ⚠️  Template argocd-repository-secret.yaml.template not found, using existing file"
+fi
+
+# Generate ghcr-credentials-secret.yaml
+if [ -f "ghcr-credentials-secret.yaml.template" ]; then
+  envsubst < ghcr-credentials-secret.yaml.template > ghcr-credentials-secret.yaml
+  echo "  ✓ Generated ghcr-credentials-secret.yaml"
+else
+  echo "  ⚠️  Template ghcr-credentials-secret.yaml.template not found, using existing file"
+fi
+
+
 APP_NAME="hello-world"
 GITHUB_ORG="essesseff-hello-world-go-template"
 ENVIRONMENT="dev"
@@ -65,15 +126,15 @@ fi
 
 # Check if ghcr-credentials-secret.yaml exists
 if [ ! -f "ghcr-credentials-secret.yaml" ]; then
-  echo "❌ Error: ghcr-credentials-secret.yaml not found"
-  echo "Please ensure ghcr-credentials-secret.yaml exists and has the correct secret for ${GITHUB_ORG}"
-  echo ""
-  read -p "Continue anyway (for example, in the case of ghcr-credentials having been previously applied on this K8s cluster)? (y/n) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted"
-    exit 1
-  fi
+  echo "❌ Error: ghcr-credentials-secret.yaml not found; therefore, ghcr-credentials secret will not be set."
+#   echo "Please ensure ghcr-credentials-secret.yaml exists and has the correct secret for ${GITHUB_ORG}"
+#   echo ""
+#   read -p "Continue anyway (for example, in the case of ghcr-credentials having been previously applied on this K8s cluster)? (y/n) " -n 1 -r
+#   echo
+#   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+#     echo "Aborted"
+#     exit 1
+#   fi
 fi
 
 # Check if argocd-repository-secret.yaml exists
@@ -92,25 +153,25 @@ if [ "$ENABLE_NOTIFICATIONS" = true ]; then
 fi
 
 # Warning about secrets
-echo ""
-if [ "$ENABLE_NOTIFICATIONS" = true ]; then
-  echo "⚠️  WARNING: You are about to apply secrets to your cluster for ${GITHUB_ORG} organization and ${APP_NAME} ${ENVIRONMENT}"
-  echo ""
-  echo "Make sure ghcr-credentials-secret.yaml contains the correct secrets for ${GITHUB_ORG}"
-  echo "Make sure argocd-repository-secret.yaml and notifications-secret.yaml contain the correct secrets for ${APP_NAME}"
-else
-  echo "⚠️  WARNING: You are about to apply secrets to your cluster for ${GITHUB_ORG} organization and ${APP_NAME} ${ENVIRONMENT}"
-  echo ""
-  echo "Make sure ghcr-credentials-secret.yaml contains the correct secrets for ${GITHUB_ORG}"
-  echo "Make sure argocd-repository-secret.yaml contains the correct secrets for ${APP_NAME}"
-fi
-echo ""
-read -p "Continue? (y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "Aborted"
-  exit 1
-fi
+# echo ""
+# if [ "$ENABLE_NOTIFICATIONS" = true ]; then
+#   echo "⚠️  WARNING: You are about to apply secrets to your cluster for ${GITHUB_ORG} organization and ${APP_NAME} ${ENVIRONMENT}"
+#   echo ""
+#   echo "Make sure ghcr-credentials-secret.yaml contains the correct secrets for ${GITHUB_ORG}"
+#   echo "Make sure argocd-repository-secret.yaml and notifications-secret.yaml contain the correct secrets for ${APP_NAME}"
+# else
+#   echo "⚠️  WARNING: You are about to apply secrets to your cluster for ${GITHUB_ORG} organization and ${APP_NAME} ${ENVIRONMENT}"
+#   echo ""
+#   echo "Make sure ghcr-credentials-secret.yaml contains the correct secrets for ${GITHUB_ORG}"
+#   echo "Make sure argocd-repository-secret.yaml contains the correct secrets for ${APP_NAME}"
+# fi
+# echo ""
+# read -p "Continue? (y/n) " -n 1 -r
+# echo
+# if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+#   echo "Aborted"
+#   exit 1
+# fi
 
 # Apply secrets
 if [ -f "ghcr-credentials-secret.yaml" ]; then
@@ -385,3 +446,8 @@ if [ "$ENABLE_NOTIFICATIONS" = true ]; then
 else
   echo "!!!REMEMBER TO DELETE YOUR SECRETS YAMLS -- DO *NOT* COMMIT THEM TO GITHUB!!!"
 fi
+
+echo ""
+echo "🧹 Cleaning up generated secret files..."
+rm -f argocd-repository-secret.yaml ghcr-credentials-secret.yaml notifications-secret.yaml
+echo "  ✓ Generated secret files removed"
