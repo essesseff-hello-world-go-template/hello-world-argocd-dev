@@ -11,6 +11,12 @@
 
 set -e
 
+# Override these if they're set in .env, otherwise use defaults
+APP_NAME="hello-world"
+GITHUB_ORG="essesseff-hello-world-go-template"
+ENVIRONMENT="dev"
+REPOSITORY_ID="{{REPOSITORY_ID}}"
+
 # ============================================================================
 # Load environment variables from .env file
 # ============================================================================
@@ -34,12 +40,6 @@ set +a
 # Generate base64 auth string for GHCR
 export GHCR_AUTH_BASE64=$(echo -n "${ARGOCD_MACHINE_USER}:${GITHUB_TOKEN}" | base64)
 
-# Override these if they're set in .env, otherwise use defaults
-APP_NAME="${APP_NAME:-hello-world}"
-GITHUB_ORG="${GITHUB_ORG:-essesseff-hello-world-go-template}"
-ENVIRONMENT="${ENVIRONMENT:-dev}"
-REPOSITORY_ID="${REPOSITORY_ID:-{{REPOSITORY_ID}}}"
-
 # ============================================================================
 # Generate YAML files from templates
 # ============================================================================
@@ -56,46 +56,46 @@ if ! command -v envsubst &> /dev/null; then
 fi
 
 # Generate argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml
-if [ -f "argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml" ]; then
-  envsubst < argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml > argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml
+if [ -f "argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml.template" ]; then
+  envsubst < argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml.template > argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml
   echo "  ✓ Generated updated argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml"
 else
-  echo "  ⚠️  argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml not found"
+  echo "  ⚠️  argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml.template not found"
   exit 1
 fi
 
 # Generate app-of-apps.yaml
-if [ -f "app-of-apps.yaml" ]; then
-  envsubst < app-of-apps.yaml > app-of-apps.yaml
+if [ -f "app-of-apps.yaml.template" ]; then
+  envsubst < app-of-apps.yaml.template > app-of-apps.yaml
   echo "  ✓ Generated updated app-of-apps.yaml"
 else
-  echo "  ⚠️  app-of-apps.yaml not found"
+  echo "  ⚠️  app-of-apps.yaml.template not found"
   exit 1
 fi
 
 # Generate argocd-repository-secret.yaml
-if [ -f "argocd-repository-secret.yaml" ]; then
-  envsubst < argocd-repository-secret.yaml > argocd-repository-secret.yaml
+if [ -f "argocd-repository-secret.yaml.template" ]; then
+  envsubst < argocd-repository-secret.yaml.template > argocd-repository-secret.yaml
   echo "  ✓ Generated updated argocd-repository-secret.yaml"
 else
-  echo "  ⚠️  argocd-repository-secret.yaml not found"
+  echo "  ⚠️  argocd-repository-secret.yaml.template not found"
   exit 1
 fi
 
 # Generate ghcr-credentials-secret.yaml
-if [ -f "ghcr-credentials-secret.yaml" ]; then
-  envsubst < ghcr-credentials-secret.yaml > ghcr-credentials-secret.yaml
+if [ -f "ghcr-credentials-secret.yaml.template" ]; then
+  envsubst < ghcr-credentials-secret.yaml.template > ghcr-credentials-secret.yaml
   echo "  ✓ Generated updated ghcr-credentials-secret.yaml"
 else
-  echo "  ⚠️  ghcr-credentials-secret.yaml not found... proceeding with the assumption that ghcr-credentials secret value already set"
+  echo "  ⚠️  ghcr-credentials-secret.yaml.template not found... proceeding with the assumption that ghcr-credentials secret value already set"
 fi
 
 # Generate notifications-configmap.yaml
-if [ -f "notifications-configmap.yaml" ]; then
-  envsubst < notifications-configmap.yaml > notifications-configmap.yaml
+if [ -f "notifications-configmap.yaml.template" ]; then
+  envsubst < notifications-configmap.yaml.template > notifications-configmap.yaml
   echo "  ✓ Generated updated notifications-configmap.yaml"
 else
-  echo "  ⚠️  notifications-configmap.yaml not found"
+  echo "  ⚠️  notifications-configmap.yaml.template not found"
   exit 1
 fi
 
