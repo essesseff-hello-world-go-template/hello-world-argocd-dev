@@ -55,20 +55,48 @@ if ! command -v envsubst &> /dev/null; then
   exit 1
 fi
 
-# Generate argocd-repository-secret.yaml
-if [ -f "argocd-repository-secret.yaml.template" ]; then
-  envsubst < argocd-repository-secret.yaml.template > argocd-repository-secret.yaml
-  echo "  ✓ Generated argocd-repository-secret.yaml"
+# Generate argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml
+if [ -f "argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml" ]; then
+  envsubst < argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml > argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml
+  echo "  ✓ Generated updated argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml"
 else
-  echo "  ⚠️  Template argocd-repository-secret.yaml.template not found, using existing file"
+  echo "  ⚠️  argocd/${APP_NAME}-${ENVIRONMENT}-application.yaml not found"
+  exit 1
+fi
+
+# Generate app-of-apps.yaml
+if [ -f "app-of-apps.yaml" ]; then
+  envsubst < app-of-apps.yaml > app-of-apps.yaml
+  echo "  ✓ Generated updated app-of-apps.yaml"
+else
+  echo "  ⚠️  app-of-apps.yaml not found"
+  exit 1
+fi
+
+# Generate argocd-repository-secret.yaml
+if [ -f "argocd-repository-secret.yaml" ]; then
+  envsubst < argocd-repository-secret.yaml > argocd-repository-secret.yaml
+  echo "  ✓ Generated updated argocd-repository-secret.yaml"
+else
+  echo "  ⚠️  argocd-repository-secret.yaml not found"
+  exit 1
 fi
 
 # Generate ghcr-credentials-secret.yaml
-if [ -f "ghcr-credentials-secret.yaml.template" ]; then
-  envsubst < ghcr-credentials-secret.yaml.template > ghcr-credentials-secret.yaml
-  echo "  ✓ Generated ghcr-credentials-secret.yaml"
+if [ -f "ghcr-credentials-secret.yaml" ]; then
+  envsubst < ghcr-credentials-secret.yaml > ghcr-credentials-secret.yaml
+  echo "  ✓ Generated updated ghcr-credentials-secret.yaml"
 else
-  echo "  ⚠️  Template ghcr-credentials-secret.yaml.template not found, using existing file"
+  echo "  ⚠️  ghcr-credentials-secret.yaml not found... proceeding with the assumption that ghcr-credentials secret value already set"
+fi
+
+# Generate notifications-configmap.yaml
+if [ -f "notifications-configmap.yaml" ]; then
+  envsubst < notifications-configmap.yaml > notifications-configmap.yaml
+  echo "  ✓ Generated updated notifications-configmap.yaml"
+else
+  echo "  ⚠️  notifications-configmap.yaml not found"
+  exit 1
 fi
 
 echo "=========================================="
