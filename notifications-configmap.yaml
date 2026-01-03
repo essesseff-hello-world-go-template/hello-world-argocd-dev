@@ -7,18 +7,18 @@ metadata:
   name: argocd-notifications-cm
   namespace: argocd
 data:
-  # Webhook service for hello-world app
+  # Webhook service for ${APP_NAME} app
   service.webhook.webhook-{{REPOSITORY_ID}}: |
     url: $argocd-webhook-url
     headers:
     - name: x-api-key
-      value: $aws-api-gateway-key-essesseff-hello-world-go-template
+      value: $aws-api-gateway-key-${GITHUB_ORG}
     - name: x-app-secret
       value: $app-secret-{{REPOSITORY_ID}}
     - name: Content-Type
       value: application/json
 
-  # Template for sync status notifications for hello-world app
+  # Template for sync status notifications for ${APP_NAME} app
   template.app-sync-status: |
     message: |
       Application: {{.app.metadata.name}}
