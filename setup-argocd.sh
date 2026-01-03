@@ -2,11 +2,11 @@
 
 # setup-argocd.sh
 
-# Setup Argo CD for hello-world dev
+# Setup Argo CD for ${APP_NAME} dev
 
 # This script sets up Argo CD notifications for an essesseff app as well as the Argo CD deployment
 # configuration for the app.
-# Template variables (hello-world, essesseff-hello-world-go-template, {{REPOSITORY_ID}}, etc.) 
+# Template variables (${APP_NAME}, essesseff-hello-world-go-template, {{REPOSITORY_ID}}, etc.) 
 # are replaced when apps are created from templates.
 
 set -e
@@ -22,7 +22,7 @@ if [ ! -f ".env" ]; then
   echo "  GITHUB_TOKEN=your-token"
   echo "  ARGOCD_MACHINE_EMAIL=your-email@example.com"
   echo ""
-  echo "See .env.example for a template"
+  echo "See env.example for a template"
   exit 1
 fi
 
@@ -70,12 +70,6 @@ if [ -f "ghcr-credentials-secret.yaml.template" ]; then
 else
   echo "  ⚠️  Template ghcr-credentials-secret.yaml.template not found, using existing file"
 fi
-
-
-APP_NAME="hello-world"
-GITHUB_ORG="essesseff-hello-world-go-template"
-ENVIRONMENT="dev"
-REPOSITORY_ID="{{REPOSITORY_ID}}"
 
 echo "=========================================="
 echo "Setting up Argo CD for ${APP_NAME} ${ENVIRONMENT}"
