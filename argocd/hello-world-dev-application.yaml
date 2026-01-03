@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: hello-world-dev
+  name: ${APP_NAME}-${ENVIRONMENT}
   namespace: argocd
   labels:
-    app: hello-world
-    environment: dev
+    app: ${APP_NAME}
+    environment: ${ENVIRONMENT}
     essesseff: "true"
     configenvrepoid: "{{REPOSITORY_ID}}"
 spec:
   project: default
   source:
-    repoURL: https://github.com/essesseff-hello-world-go-template/hello-world-config-dev
+    repoURL: https://github.com/${GITHUB_ORG}/${APP_NAME}-config-${ENVIRONMENT}
     targetRevision: main
     path: .
     helm:
@@ -19,7 +19,7 @@ spec:
         - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: essesseff-hello-world-go-template
+    namespace: ${GITHUB_ORG}
   syncPolicy:
     automated:
       prune: true
@@ -37,8 +37,8 @@ spec:
         maxDuration: 3m
   revisionHistoryLimit: 10
   info:
-    - name: hello-world
-      value: "hello-world GitOps deployment managed by essesseff"
+    - name: ${APP_NAME}
+      value: "${APP_NAME} GitOps deployment managed by essesseff"
     - name: environment
-      value: "dev"
+      value: "${ENVIRONMENT}"
 
