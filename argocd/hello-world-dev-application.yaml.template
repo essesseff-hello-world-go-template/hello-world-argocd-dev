@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${APP_NAME}-${ENVIRONMENT}
+  namespace: argocd
+  labels:
+    app: ${APP_NAME}
+    environment: ${ENVIRONMENT}
+    essesseff: "true"
+    configenvrepoid: "{{REPOSITORY_ID}}"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/${GITHUB_ORG}/${APP_NAME}-config-${ENVIRONMENT}
+    targetRevision: main
+    path: .
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${GITHUB_ORG}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+  info:
+    - name: ${APP_NAME}
+      value: "${APP_NAME} GitOps deployment managed by essesseff"
+    - name: environment
+      value: "${ENVIRONMENT}"
