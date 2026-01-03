@@ -1,3 +1,12 @@
+# Environment variables and secrets
+.env
+
+# essesseff Argo CD Notificaitons secret file
+notifications-secret.yaml
+
+# But keep the templates!
+# *.yaml.template files *should* be committed
+
 # Argo CD repository secrets (contains GitHub tokens - DO NOT COMMIT)
 argocd-repository-secret.yaml
 *argocd-repository-secret*.yaml
