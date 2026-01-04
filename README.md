@@ -46,7 +46,12 @@ hello-world-argocd-dev/
    
 ### Configure hello-world-dev essesseff App to Argo CD and deploy to K8s
 
-1. **Configure Environment Variables in .env File**:
+1. **Git Clone This Repository**:
+   ```bash
+   git clone git@github.com:essesseff-hello-world-go-template/hello-world-argocd-dev.git
+   ```
+   
+2. **Configure Environment Variables in .env File**:
    ```bash
    cp env.example .env
    ```
@@ -78,7 +83,7 @@ hello-world-argocd-dev/
    
       **Note**: This secret can be set once for the entire GitHub organization / K8s namespace and will be used by Argo CD to pull container images from GHCR for all environments. You do not need to create separate secrets for each environment repository but should set the ghcr-credentials secret at least once per K8s namespace in each relevant K8s cluster.
 
-2. **Configure Argo CD notifications secrets**:
+3. **Configure Argo CD notifications secrets**:
 
    Request the notifications-secret.yaml file contents from the essesseff UX for hello-world here:
    https://www.essesseff.com/home/[YOUR_essesseff_TEAM_ACCOUNT]/apps/hello-world/settings
