@@ -14,14 +14,15 @@ This repository contains the Argo CD Application manifest for the **DEV** enviro
 
 ```
 hello-world-argocd-dev/
-├── app-of-apps.yaml                  # Root Application
+├── app-of-apps.yaml.template                      # Root Application template
 ├── argocd/
-│   └── hello-world-dev-application.yaml  # DEV environment Application manifest (auto-synced)
-├── argocd-repository-secret.yaml     # Argo CD repository secrets
-├── ghcr-credentials-secret.yaml      # GHCR credentials (set once per K8s cluster for organization)
-├── notifications-configmap.yaml      # Argo CD notifications configuration
+│   └── hello-world-dev-application.yaml.template  # DEV environment Application manifest (auto-synced) template
+├── argocd-repository-secret.yaml.template         # Argo CD repository secrets template
+├── ghcr-credentials-secret.yaml.template          # GHCR credentials (set once per K8s cluster for organization) template
+├── notifications-configmap.yaml.template          # Argo CD notifications configuration template
 ├── offboarding/
-│   └── offboard.sh                   # script for offboarding 
+│   └── offboard-essesseff-hello-world-go-template.sh # script for offboarding the essesseff-hello-world-go-template namespace from K8s
+│   └── offboard-hello-world-dev.sh   # script for offboarding the hello-world dev app 1) from essesseff only or 2) from Argo CD and K8s entirely
 ├── setup-argocd-cluster.sh           # Argo CD K8s setup script 
 ├── setup-argocd.sh                   # Argo CD hello-world-dev essesseff app setup script 
 └── README.md                         # This file
@@ -43,28 +44,46 @@ hello-world-argocd-dev/
    ./setup-argocd-cluster.sh
    ```
    
-### Deploy hello-world-dev essesseff App to Argo CD
+### Configure hello-world-dev essesseff App to Argo CD and deploy to K8s
 
-1. **Configure Argo CD repository access**:
-   
-   Edit argocd-repository-secret.yaml with your GitHub Argo CD machine username and token
-   
-   This creates secrets for Argo CD to access:
-   - `hello-world-argocd-dev` repository (to read Application manifests)
-   - `hello-world-config-dev` repository (to read Helm charts and values)
+1. **Configure Environment Variables in .env File**:
+   ```bash
+   cp env.example .env
+   ```
+   Then set the environment variables in the .env which will be used for generating the following from the templates in this repository:
 
-2. **Configure Argo CD access to GitHub Container Registry (GHCR)**:
+      a. ***Configuration of Argo CD repository access***:
    
-   Edit ghcr-credentials-secret.yaml with your GitHub Argo CD machine username, token, email, and base64 credentials
+      argocd-repository-secret.yaml with your GitHub Argo CD machine username and token
    
-   **Note**: This secret can be set once for the entire GitHub organization and will be used by Argo CD to pull container images from GHCR for all environments. You do not need to create separate secrets for each environment repository.
+      This creates secrets for Argo CD to access:
+      - `hello-world-argocd-dev` repository (to read Application manifests)
+      - `hello-world-config-dev` repository (to read Helm charts and values)
 
-3. **Configure Argo CD notifications secrets**:
+      b. ***Configuration of Argo CD access to GitHub Container Registry (GHCR)***:
+   
+      ghcr-credentials-secret.yaml with your GitHub Argo CD machine username, token, email, and base64 credentials
+
+      c. ***Configuration of hello-world-dev Deployment in Argo CD***:
+
+      hello-world-dev-application.yaml is used to configure the hello-world-dev deployment
+
+      d. ***Configuration of hello-world-argocd-dev App-of-Apps Deployment in Argo CD***:
+
+      app-of-apps.yaml is used to configure the hello-world-argocd-dev app-of-apps deployment
+
+      e. ***Configuration of hello-world-dev Argo CD Notifications to essesseff***:
+
+      If notifications-secret.yaml is downloaded from essesseff for hello-world-dev, notifications-configmap.yaml will be used to configure Argo CD notifications to essesseff.
+   
+      **Note**: This secret can be set once for the entire GitHub organization / K8s namespace and will be used by Argo CD to pull container images from GHCR for all environments. You do not need to create separate secrets for each environment repository but should set the ghcr-credentials secret at least once per K8s namespace in each relevant K8s cluster.
+
+2. **Configure Argo CD notifications secrets**:
 
    Request the notifications-secret.yaml file contents from the essesseff UX for hello-world here:
-   https://www.essesseff.com/home/YOUR_essesseff_TEAM_ACCOUNT/apps/hello-world/settings
+   https://www.essesseff.com/home/[YOUR_essesseff_TEAM_ACCOUNT]/apps/hello-world/settings
 
-   Save the contents to ./notifications-secret.yaml 
+   Copy the file to ./notifications-secret.yaml 
 
 4. **Run the setup-argocd.sh script**:
    ```bash
@@ -142,22 +161,22 @@ This setup requires the essesseff platform for deployment orchestration:
 
 ### Reduce Git Polling Interval (Optional)
 
-By default, Argo CD polls Git repositories every ~3 minutes (120-180 seconds). To reduce this to 60 seconds for faster change detection:
+By default, Argo CD polls Git repositories every ~3 minutes (120-180 seconds). To reduce this to 30 seconds for faster change detection:
 
 ```bash
-kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"timeout.reconciliation":"60s","timeout.reconciliation.jitter":"10s"}}'
+kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"timeout.reconciliation":"30s","timeout.reconciliation.jitter":"10s"}}'
 ```
 
 This will:
-- Set base polling interval to 60 seconds
-- Add up to 10 seconds of jitter (total: 60-70 seconds)
+- Set base polling interval to 30 seconds
+- Add up to 10 seconds of jitter (total: 30-40 seconds)
 - Allow Argo CD to detect changes in `argocd/hello-world-dev-application.yaml` more quickly
 
 ## How It Works
 
 1. **essesseff manages** image lifecycle and promotion decisions
 2. **essesseff updates** `Chart.yaml` and `values.yaml` files in config repos with approved image tags
-3. **Argo CD detects** changes via Git polling (default: ~3 minutes, configurable to 60 seconds)
+3. **Argo CD detects** changes via Git polling (default: ~3 minutes, configurable to 30 seconds)
 4. **Argo CD syncs** Application automatically (auto-sync enabled)
 5. **Kubernetes resources** are updated with new image versions
 
