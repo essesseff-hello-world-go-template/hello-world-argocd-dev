@@ -90,15 +90,6 @@ else
   echo "  ⚠️  ghcr-credentials-secret.yaml.template not found... proceeding with the assumption that ghcr-credentials secret value already set"
 fi
 
-# Generate notifications-configmap.yaml
-if [ -f "notifications-configmap.yaml.template" ]; then
-  envsubst < notifications-configmap.yaml.template > notifications-configmap.yaml
-  echo "  ✓ Generated updated notifications-configmap.yaml"
-else
-  echo "  ⚠️  notifications-configmap.yaml.template not found"
-  exit 1
-fi
-
 echo "=========================================="
 echo "Setting up Argo CD for ${APP_NAME} ${ENVIRONMENT}"
 echo "=========================================="
@@ -449,6 +440,7 @@ if [ ! -f "${ARGOCD_APP_FILE}" ]; then
   exit 1
 fi
 
+# Commit argocd app to git repo
 git add ${ARGOCD_APP_FILE}
 git commit -m "initial commit"
 git push origin main
