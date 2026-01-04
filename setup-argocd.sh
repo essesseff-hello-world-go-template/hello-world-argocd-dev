@@ -466,6 +466,3 @@ else
 fi
 
 echo ""
-echo "🧹 Cleaning up generated secret files..."
-rm -f argocd-repository-secret.yaml ghcr-credentials-secret.yaml notifications-secret.yaml
-echo "  ✓ Generated secret files removed"
