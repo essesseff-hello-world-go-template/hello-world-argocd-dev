@@ -2,7 +2,17 @@
 
 This repository contains the Argo CD Application manifest for the **DEV** environment of the hello-world essesseff app.  
 
-It is ***not necessary*** to be an essesseff subscriber in order to make use of the standardized pattern and automation offered in this and corresponding code and config repositories for configuring your Go application to follow said standardized pattern of development, build, deployment and promotion through DEV -> QA -> STAGING -> PROD, although it should not surprise you that it will be much easier for essesseff subscribers to do so.
+It is ***not necessary*** to be an essesseff™ subscriber in order to make use of the standardized pattern and automation offered in this and corresponding code and config repositories for configuring and managing your Go application to follow said standardized pattern of development, build, deployment and promotion through DEV -> QA -> STAGING -> PROD environments, although it should not surprise you that it will be much easier for essesseff™ subscribers to do so.
+
+***Please Note:***
+
+essesseff™ is an independent DevOps ALM PaaS as SaaS and is no way affiliated with, endorsed by, sponsored by, or otherwise connected to GitHub® or The Linux Foundation®. 
+
+essesseff™ is a trademark of essesseff LLC.
+
+GITHUB®, the GITHUB® logo design and the INVERTOCAT logo design are trademarks of GitHub, Inc., registered in the United States and other countries.
+
+Argo®, Helm®, Kubernetes® and K8s® are registered trademarks of The Linux Foundation.
 
 ## See Also
 
@@ -83,16 +93,16 @@ hello-world-argocd-dev/
 
       If notifications-secret.yaml is downloaded from essesseff for hello-world-dev, notifications-configmap.yaml will be used to configure Argo CD notifications to essesseff.
    
-      **Note**: This secret can be set once for the entire GitHub organization / K8s namespace and will be used by Argo CD to pull container images from GHCR for all environments. You do not need to create separate secrets for each environment repository but should set the ghcr-credentials secret at least once per K8s namespace in each relevant K8s cluster.
+      **Note**: This secret can be set once for the entire GitHub organization / K8s namespace and will be used by Argo CD to pull container images from GHCR for all environments. You do not need to create separate secrets for each environment repository but should set the ghcr-credentials secret at least once per K8s namespace in each relevant K8s cluster.  ***If the ghcr-credentials-secret.yaml.template file is not present, the setup-argocd.sh script will assume that the ghcr-credentials secret is already set for the given K8s namespace on the env-specific K8s cluster and move on.***
 
-3. **Configure Argo CD notifications secrets**:
+3. **(if an essesseff-subscribed app) Configure Argo CD Notifications Secrets**:
 
    Request the notifications-secret.yaml file contents from the essesseff UX for hello-world here:
    https://www.essesseff.com/home/[YOUR_essesseff_TEAM_ACCOUNT]/apps/hello-world/settings
 
-   Copy the file to ./notifications-secret.yaml 
+   Copy the downloaded file to ./notifications-secret.yaml 
 
-4. **Run the setup-argocd.sh script**:
+4. **Run the setup-argocd.sh Script**:
    ```bash
    chmod 744 setup-argocd.sh
    ./setup-argocd.sh
@@ -110,12 +120,12 @@ hello-world-argocd-dev/
    - `hello-world-argocd-dev` - Root Application (watches this repository)
    - `hello-world-dev` - Environment Application (auto-synced by root Application)
 
-6. **Access the deployed application**:
+6. **Access the Deployed Application**:
    ```bash
    kubectl port-forward service/hello-world-dev 8081:80 -n essesseff-hello-world-go-template
    # Access: http://localhost:8081
    ```
-### Offboard hello-world-dev deployment from Argo CD and K8s
+### How to Offboard hello-world-dev Deployment from Argo CD and K8s
 
 1. **Execute the offboarding script**:
    ```bash
@@ -124,7 +134,7 @@ hello-world-argocd-dev/
    ./offboard-hello-world-dev.sh
    ```
 
-### Offboard essesseff-hello-world-go-template Namespace K8s
+### How to Offboard essesseff-hello-world-go-template K8s Namespace and All of its Resources
 
 1. **Execute the offboarding script**:
    ```bash
@@ -143,12 +153,17 @@ hello-world-argocd-dev/
 
 ## Deployment Process
 
-### Automatic Deployment
+### Automatic DEV Code Promotion Deployment (essesseff-Subscribed App)
 
 1. Push code to `main` branch in `hello-world` source code repository
 2. GitHub Actions builds container image
-3. essesseff GitHub App webhook triggers essesseff to auto-update `hello-world-config-dev/Chart.yaml` and `hello-world-config-dev/values.yaml` with new image tag
-4. Argo CD syncs DEV Application automatically
+3. essesseff GitHub App automation triggers essesseff to auto-update Helm `hello-world-config-dev/Chart.yaml` and `hello-world-config-dev/values.yaml` with the image tag of the newly built image
+4. Argo CD syncs DEV Application automatically on K8s
+
+### Manual GitOps Deployment
+
+1. Push update(s) to the `main` branch in `hello-world-config-dev` repository, typically to Helm Chart.yaml and/or values.yaml
+2. Argo CD syncs DEV Application automatically on K8s
 
 ## Repository URLs
 
@@ -160,15 +175,15 @@ hello-world-argocd-dev/
 
 This setup requires the essesseff platform for deployment orchestration:
 
-- **Event-driven promotions**: Automatic DEV deployments on code push
-- **RBAC enforcement**: Role-based access control for deployments
-- **Audit trail**: Complete history of all deployments
+- **Event-driven promotions**: Automatic DEV deployments on successful completion of code build and image publish in the source repo GHCR
+- **RBAC enforcement**: Role-based access control for code and config development, build, deployment, promotion, etc.
+- **Audit trail**: Complete history of all builds, deployments, promotions, etc.
 
 ## Argo CD Configuration
 
 ### Reduce Git Polling Interval (Optional)
 
-By default, Argo CD polls Git repositories every ~3 minutes (120-180 seconds). To reduce this to 30 seconds for faster change detection:
+By default, Argo CD polls Git repositories every ~3 minutes (120-180 seconds). To reduce this to, for example, 30 seconds for faster change detection:
 
 ```bash
 kubectl patch configmap argocd-cm -n argocd --type merge -p '{"data":{"timeout.reconciliation":"30s","timeout.reconciliation.jitter":"10s"}}'
@@ -182,10 +197,10 @@ This will:
 ## How It Works
 
 1. **essesseff manages** image lifecycle and promotion decisions
-2. **essesseff updates** `Chart.yaml` and `values.yaml` files in config repos with approved image tags
-3. **Argo CD detects** changes via Git polling (default: ~3 minutes, configurable to 30 seconds)
+2. **essesseff updates** Helm `Chart.yaml` and `values.yaml` files in config repos with approved image tags
+3. **Argo CD detects** changes via Git polling (default: ~3 minutes, configurable to 30 seconds, as in the example above, or to the interval of your choosing)
 4. **Argo CD syncs** Application automatically (auto-sync enabled)
-5. **Kubernetes resources** are updated with new image versions
+5. **Kubernetes resources** are updated with new image versions and/or configuration settings as per Helm chart and overrides i.e. values.yaml settings
 
 ## See Also
 
