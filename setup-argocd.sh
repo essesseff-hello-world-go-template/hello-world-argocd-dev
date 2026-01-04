@@ -449,6 +449,10 @@ if [ ! -f "${ARGOCD_APP_FILE}" ]; then
   exit 1
 fi
 
+git add ${ARGOCD_APP_FILE}
+git commit -m "initial commit"
+git push origin main
+
 # Apply app-of-apps
 echo "📝 Applying app-of-apps for ${ENVIRONMENT}..."
 kubectl apply -f app-of-apps.yaml
