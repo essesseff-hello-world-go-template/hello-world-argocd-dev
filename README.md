@@ -93,7 +93,7 @@ hello-world-argocd-dev/
 
       If notifications-secret.yaml is downloaded from essesseff for hello-world-dev, notifications-configmap.yaml will be used to configure Argo CD notifications to essesseff.
    
-      **Note**: This secret can be set once for the entire GitHub organization / K8s namespace and will be used by Argo CD to pull container images from GHCR for all environments. You do not need to create separate secrets for each environment repository but should set the ghcr-credentials secret at least once per K8s namespace in each relevant K8s cluster.  ***If the ghcr-credentials-secret.yaml.template file is not present, the setup-argocd.sh script will assume that the ghcr-credentials secret is already set for the given K8s namespace on the env-specific K8s cluster and move on.***
+      **Note**: This secret can be set once for the entire GitHub organization / K8s namespace and will be used by Argo CD to pull container images from GHCR for all environments. You do not need to create separate secrets for each environment repository but should set the ghcr-credentials secret at least once per K8s namespace in each relevant K8s cluster.  *If the ghcr-credentials-secret.yaml.template file is not present, the setup-argocd.sh script will assume that the ghcr-credentials secret is already set for the given K8s namespace on the env-specific K8s cluster and move on.*
 
 3. **(if an essesseff-subscribed app) Configure Argo CD Notifications Secrets**:
 
