@@ -1,0 +1,91 @@
+# notifications-configmap.yaml
+# Notification templates and webhook service configuration
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  # Webhook service for hello-world app
+  service.webhook.webhook-{{REPOSITORY_ID}}: |
+    url: $argocd-webhook-url
+    headers:
+    - name: x-api-key
+      value: $aws-api-gateway-key-essesseff-hello-world-go-template
+    - name: x-app-secret
+      value: $app-secret-{{REPOSITORY_ID}}
+    - name: Content-Type
+      value: application/json
+
+  # Template for sync status notifications for hello-world app
+  template.app-sync-status: |
+    message: |
+      Application: {{.app.metadata.name}}
+      Event: {{.app.status.operationState.phase}}
+      RepositoryId: {{.app.metadata.labels.configenvrepoid}}
+      Environment: {{.app.metadata.labels.environment}}
+      NameSpace: {{.app.spec.destination.namespace}}
+      SyncStatus: {{.app.status.sync.status}}
+      HealthStatus: {{.app.status.health.status}}
+      Revision: {{.app.status.sync.revision}}
+      RevisionShort: {{substr 0 7 .app.status.sync.revision}}
+      ConfigRepoUrl: {{.app.spec.source.repoURL}}
+      StartedAt: {{.app.status.operationState.startedAt}}
+      FinishedAt: {{.app.status.operationState.finishedAt}}
+      OperationMessage: {{.app.status.operationState.message}}
+    webhook:
+      webhook-{{.app.metadata.labels.configenvrepoid}}:
+        method: POST
+        body: |
+          {
+            "repository_id": "{{.app.metadata.labels.configenvrepoid}}",
+            "event_type": "{{.app.status.operationState.phase}}",
+            "application_name": "{{.app.metadata.name}}",
+            "app": "{{.app.metadata.labels.app}}",
+            "environment": "{{.app.metadata.labels.environment}}",
+            "namespace": "{{.app.spec.destination.namespace}}",
+            "sync_status": "{{.app.status.sync.status}}",
+            "health_status": "{{.app.status.health.status}}",
+            "revision": "{{.app.status.sync.revision}}",
+            "revision_short": "{{substr 0 7 .app.status.sync.revision}}",
+            "config_repo_url": "{{.app.spec.source.repoURL}}",
+            "timestamp": "{{.app.status.operationState.finishedAt}}",
+            "started_at": "{{.app.status.operationState.startedAt}}",
+            "operation_message": "{{.app.status.operationState.message}}",
+            "sync_result": {
+              "resources": "{{.app.status.operationState.syncResult.resources}}",
+              "revision": "{{.app.status.operationState.syncResult.revision}}"
+            }
+          }
+          
+  # Triggers - when to send notifications
+  trigger.on-sync-started: |
+    - description: Application sync has started
+      send:
+      - app-sync-status
+      when: app.status.operationState.phase in ['Running'] and app.status.operationState.operation.sync != nil
+
+  trigger.on-sync-succeeded: |
+    - description: Application sync succeeded
+      send:
+      - app-sync-status
+      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status != 'Healthy' and app.status.health.status != 'Degraded'
+
+  trigger.on-sync-failed: |
+    - description: Application sync failed
+      send:
+      - app-sync-status
+      when: app.status.operationState.phase in ['Failed', 'Error']
+
+  trigger.on-deployed: |
+    - description: Application deployed successfully (synced and healthy)
+      send:
+      - app-sync-status
+      when: app.status.health.status == 'Healthy'
+
+  trigger.on-health-degraded: |
+    - description: Application health degraded
+      send:
+      - app-sync-status
+      when: app.status.health.status == 'Degraded'
