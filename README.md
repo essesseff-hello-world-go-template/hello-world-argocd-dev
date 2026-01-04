@@ -1,6 +1,8 @@
 # hello-world - Argo CD Application (DEV)
 
-This repository contains the Argo CD Application manifest for the **DEV** environment of the hello-world essesseff app.
+This repository contains the Argo CD Application manifest for the **DEV** environment of the hello-world essesseff app.  
+
+It is ***not necessary*** to be an essesseff subscriber in order to make use of the standardized pattern and automation offered in this and corresponding code and config repositories for configuring your Go application to follow said standardized pattern of development, build, deployment and promotion through DEV -> QA -> STAGING -> PROD, although it should not surprise you that it will be much easier for essesseff subscribers to do so.
 
 ## See Also
 
@@ -31,12 +33,12 @@ hello-world-argocd-dev/
 ## Architecture
 
 - **Deployment Model**: Trunk-based development (single `main` branch)
-- **Auto-Deploy**: Enabled (via essesseff webhooks)
+- **Auto-Deploy**: Enabled upon successful code build (via essesseff GitHub App automation).  For non-essesseff subscribers and for otherwise non-code build-related deployments, DEV deployments and code promotions can be accomplished through commit(s) to the config-dev repo, in particular the Chart.yaml and values.yaml.
 - **GitOps**: Managed by Argo CD with automated sync
 
 ## Quick Start
 
-### Deploy/Configure Argo CD on the Environment-specific Kubernetes Cluster (if not done already)
+### (if not done already) Deploy/Configure Argo CD on the Environment-specific Kubernetes Cluster 
 
 1. **Run Argo CD cluster setup script**:
 ```bash
