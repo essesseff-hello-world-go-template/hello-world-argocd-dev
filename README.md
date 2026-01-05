@@ -43,7 +43,7 @@ hello-world-argocd-dev/
 ## Architecture
 
 - **Deployment Model**: Trunk-based development (single `main` branch)
-- **Auto-Deploy**: Enabled upon successful code build (via essesseff GitHub App automation).  For non-essesseff subscribers and for otherwise non-code build-related deployments, DEV deployments and code promotions can be accomplished through commit(s) to the config-dev repo, in particular the Helm Chart.yaml and values.yaml.
+- **Auto-Deploy**: DEV code promotion upon successful code build (via essesseff GitHub App automation), as well as re-deploy and rollback via essesseff UX.  For non-essesseff subscribers and for otherwise non-code build-related deployments, DEV deployments and code promotions can be accomplished through commit(s) to the config-dev repo, in particular the Helm Chart.yaml and values.yaml.
 - **GitOps**: Managed by Argo CD with automated sync
 
 ## Quick Start
