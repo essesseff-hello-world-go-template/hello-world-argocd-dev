@@ -1,18 +1,18 @@
 # hello-world - Argo CD Application (DEV)
 
-This repository contains the Argo CD Application manifest for the **DEV** environment of the hello-world essesseff app.  
+This repository contains the Argo CD Application manifest for the **DEV** environment of the hello-world essesseff™ app.  
 
 It is ***not necessary*** to be an essesseff™ subscriber in order to make use of the standardized pattern and automation offered in this and corresponding code and config repositories for configuring and managing your Go application to follow said standardized pattern of development, build, deployment and promotion through DEV -> QA -> STAGING -> PROD environments, although it should not surprise you that it will be much easier for essesseff™ subscribers to do so.
 
-***Please Note:***
+*Please Note:*
 
-essesseff™ is an independent DevOps ALM PaaS as SaaS and is no way affiliated with, endorsed by, sponsored by, or otherwise connected to GitHub® or The Linux Foundation®. 
+*essesseff™ is an independent DevOps ALM PaaS-as-SaaS and is in no way affiliated with, endorsed by, sponsored by, or otherwise connected to GitHub® or The Linux Foundation®.* 
 
-essesseff™ is a trademark of essesseff LLC.
+*essesseff™ is a trademark of essesseff LLC.*
 
-GITHUB®, the GITHUB® logo design and the INVERTOCAT logo design are trademarks of GitHub, Inc., registered in the United States and other countries.
+*GITHUB®, the GITHUB® logo design and the INVERTOCAT logo design are trademarks of GitHub, Inc., registered in the United States and other countries.*
 
-Argo®, Helm®, Kubernetes® and K8s® are registered trademarks of The Linux Foundation.
+*Argo®, Helm®, Kubernetes® and K8s® are registered trademarks of The Linux Foundation.*
 
 ## See Also
 
