@@ -498,5 +498,5 @@ EOF
   echo "  • Triggers: on-sync-started, on-sync-succeeded, on-sync-failed, on-deployed, on-health-degraded"
   echo ""
   echo "Note: Namespace '${NAMESPACE}' still exists."
-  echo "To remove the entire namespace and all namespace-scoped resources, run: ./offboard-namespace.sh"
+  echo "To remove the entire namespace and all namespace-scoped resources, run: ./offboard-${NAMESPACE}.sh"
 fi
