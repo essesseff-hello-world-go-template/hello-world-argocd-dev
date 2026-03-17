@@ -2,7 +2,7 @@
 set -e
 
 # Templated variables - replaced at onboarding
-NAMESPACE="essesseff-hello-world-go-template"
+NAMESPACE="{{K8S_NAMESPACE}}"
 
 echo "=========================================="
 echo "⚠️  NAMESPACE OFFBOARDING WARNING ⚠️"
