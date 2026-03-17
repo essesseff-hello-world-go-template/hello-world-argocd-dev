@@ -33,7 +33,7 @@ hello-world-argocd-dev/
 ├── ghcr-credentials-secret.yaml.template          # GHCR credentials (set once per K8s cluster for organization) template
 ├── notifications-configmap.yaml.template          # Argo CD notifications configuration template
 ├── offboarding/
-│   └── offboard-essesseff-hello-world-go-template.sh # script for offboarding the essesseff-hello-world-go-template namespace from K8s
+│   └── offboard-essesseff-hello-world-go-template.sh # script for offboarding the {{K8S_NAMESPACE}} namespace from K8s
 │   └── offboard-hello-world-dev.sh   # script for offboarding the hello-world dev app 1) from essesseff only or 2) from Argo CD and K8s entirely
 ├── setup-argocd-cluster.sh           # Argo CD K8s setup script 
 ├── setup-argocd.sh                   # Argo CD hello-world-dev essesseff app setup script 
@@ -122,7 +122,7 @@ hello-world-argocd-dev/
 
 6. **Access the Deployed Application**:
    ```bash
-   kubectl port-forward service/hello-world-dev 8081:80 -n essesseff-hello-world-go-template
+   kubectl port-forward service/hello-world-dev 8081:80 -n {{K8S_NAMESPACE}}
    # Access: http://localhost:8081
    ```
 ### How to Offboard hello-world-dev Deployment from Argo CD and K8s
@@ -134,7 +134,7 @@ hello-world-argocd-dev/
    ./offboard-hello-world-dev.sh
    ```
 
-### How to Offboard essesseff-hello-world-go-template K8s Namespace and All of its Resources
+### How to Offboard {{K8S_NAMESPACE}} K8s Namespace and All of its Resources
 
 1. **Execute the offboarding script**:
    ```bash
@@ -148,7 +148,7 @@ hello-world-argocd-dev/
 - **Name**: `hello-world-dev`
 - **Namespace**: `argocd`
 - **Source Repository**: `hello-world-config-dev`
-- **Destination Namespace**: `essesseff-hello-world-go-template`
+- **Destination Namespace**: `{{K8S_NAMESPACE}}`
 - **Sync Policy**: Automated with prune and self-heal enabled
 
 ## Deployment Process
