@@ -14,6 +14,8 @@ It is ***not necessary*** to be an essesseff™ subscriber in order to make use 
 
 *Argo®, Helm®, Kubernetes® and K8s® are registered trademarks of The Linux Foundation.*
 
+***Note: it is highly recommended that, rather than going through all the steps here to configure Argo CD, that for convenience and faster turnaround time you instead use the [essesseff-onboarding-utility](https://github.com/essesseff/essesseff-onboarding-utility)***
+
 ## See Also
 
 - [essesseff Documentation](https://essesseff.com/docs) - essesseff platform documentation
@@ -57,6 +59,8 @@ hello-world-argocd-dev/
    ```
    
 ### Configure hello-world-dev essesseff App to Argo CD and deploy to K8s
+
+***Note: it is highly recommended that, rather than going through all the steps here to configure Argo CD, that for convenience and faster turnaround time you instead use the [essesseff-onboarding-utility](https://github.com/essesseff/essesseff-onboarding-utility)***
 
 1. **Git Clone This Repository**:
    ```bash
